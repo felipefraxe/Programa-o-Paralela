@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <unistd.h>
-#include <pthread.h>
 
 volatile int FLAG_STOP = 0; 
 volatile int SLEEP_DURATION = 200000; 
-void* animation(void *arg) {
+
+void animation() {
     int pinguim[25][30] = { 
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -28,13 +28,18 @@ void* animation(void *arg) {
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
     };
-
+    
     for (int i = 0; i < 1000000; i++) {
-        // printf("\033[H\033[J");
-        // printf("\r");
+        if (FLAG_STOP == 1) {
+            printf("\033[2J\033[0;0H");
+            fflush(stdout);
+            return;
+        }
+
+        printf("\033[H\033[J");
         for (int k = 0; k < 25; k++) {
             for (int j = 0; j < 30; j++) {
-                printf ("\033[%d;%dH", k, j+50 ); 
+                printf("\033[%d;%dH", k, j+50); 
                 switch (pinguim[k][(j + i) % 30]) {
                     case 0: printf(" "); break;
                     case 1: printf("_"); break;
@@ -51,27 +56,19 @@ void* animation(void *arg) {
                     default: break;
                 }
             }
-            // printf("\n");
         }
-
 
         fflush(stdout);
 
-        for (int k = 0; k < SLEEP_DURATION; k += 10000) {
-            if (FLAG_STOP == 1) {
-                printf("\033[2J\033[0;0H");
-                fflush(stdout);
-                return NULL;
-            }
-            usleep(10000);
+        usleep(SLEEP_DURATION);
         }
-    }
-
-    return NULL;
 }
 
-void* stopAnimation(void* arg) {
+int main() {
     int command;
+
+    animation();
+
     while (1) {
         printf("\033[25;0HEnter 1 to stop, 2 to speed up: ");
         fflush(stdout);
@@ -86,30 +83,14 @@ void* stopAnimation(void* arg) {
             FLAG_STOP = 1;
             break;
         } else if (command == 2) {
-
             printf("\033[2J");
             fflush(stdout);
             SLEEP_DURATION = SLEEP_DURATION > 10000 ? SLEEP_DURATION / 2 : 10000;
         }
     }
-    return NULL;
-}
 
-
-int main(int argc, char* argv[]) {
-    pthread_t threads[2];
-
-    printf("\033[2J");
-    // printf ("\033[10;1HEnter 1 to stop, 2 to speed up: "); 
-    // printf("\033[1;1H teste");
-    // fflush(stdout);
-
-
-    pthread_create(&threads[0], NULL, animation, NULL);
-    pthread_create(&threads[1], NULL, stopAnimation, NULL);
-
-    for (int i = 0; i < 2; i++)
-        pthread_join(threads[i], NULL);
+    // Wait for the animation process to exit
+    wait(NULL);
 
     return 0;
 }
